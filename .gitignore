@@ -16,3 +16,6 @@ wheels/
 # dataset
 26045171/
 student_26045171.zip
+
+# Models
+runs/
