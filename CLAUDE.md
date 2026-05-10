@@ -5,7 +5,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Context
 
 UTS 42028 Deep Learning and CNN — Assignment 2 (2026), student ID 26045171.
-**Due: Monday 11 May 2026, 11:59pm**. Worth 30% of total subject marks.
+**Due: Friday 15 May 2026, 11:59pm**. Worth 30% of total subject marks.
 
 ## Assignment requirements (from spec)
 
@@ -38,13 +38,10 @@ UTS 42028 Deep Learning and CNN — Assignment 2 (2026), student ID 26045171.
 
 | Exp | Task | Notebook | Status |
 |-----|------|----------|--------|
-| 1 | Image classification — baseline CNN | `Experiment_1_Classification.ipynb` | Need to verify |
-| 2 | Image classification — customized CNN | `Experiment_1_Classification.ipynb` | Need to verify |
-| 3 | Object detection — Faster R-CNN | `Part_2_Object_Detection.ipynb` | ✅ Complete (test mAP@50=0.9411) |
-| 4 | Object detection — SSD300 | `Part_2_Object_Detection.ipynb` | ✅ Complete (test mAP@50=0.9246) |
-
-`Part_2_Object_Detection_Augment.ipynb` is extra work (not required by spec).
-`Assignment-2-Notebook-LeikoRavelo-26045171.ipynb` is currently empty — submission notebook.
+| 1 | Image classification — baseline CNN | `A2_Classification_P1_Training.ipynb` | ✅ Complete (train=1.0000, val=0.9488, test=0.9525) |
+| 2 | Image classification — customized CNN | `A2_Classification_P1_Training.ipynb` | ✅ Complete (train=0.9579, val=0.8737, test=0.8256) |
+| 3 | Object detection — Faster R-CNN | `A2_Detection_P1_Training.ipynb` | ✅ Complete (test mAP@50=0.9364, mAP@50-95=0.6561) |
+| 4 | Object detection — SSD300 | `A2_Detection_P1_Training.ipynb` | ✅ Complete (test mAP@50=0.9107, mAP@50-95=0.6134) |
 
 ## Environment
 
@@ -55,10 +52,10 @@ UTS 42028 Deep Learning and CNN — Assignment 2 (2026), student ID 26045171.
 ## Repository structure
 
 ```
-Assignment-2-Notebook-LeikoRavelo-26045171.ipynb  # Main submission notebook (currently empty)
-Experiment_1_Classification.ipynb                 # Part 1: dog breed classification (Exp 1 & 2)
-Part_2_Object_Detection.ipynb                     # Part 2: Faster-RCNN (Exp 3) + SSD (Exp 4) — COMPLETE
-Part_2_Object_Detection_Augment.ipynb             # Extra: same but with augmentation (not required)
+A2_Classification_P1_Training.ipynb               # Part 1: dog breed classification training (Exp 1 & 2)
+A2_Classification_P1_Evaluation.ipynb             # Part 1: evaluation, confusion matrices, Grad-CAM
+A2_Detection_P1_Training.ipynb                    # Part 2: Faster-RCNN (Exp 3) + SSD300 (Exp 4)
+visualise_unannotated_detection.ipynb             # Utility: inspect unannotated images in dataset
 Assignment2_Specification-2026.pdf                # Official spec
 lab/                                               # Weekly lab notebooks (Weeks 5–7)
 26045171/                                          # Gitignored: datasets
@@ -67,35 +64,51 @@ lab/                                               # Weekly lab notebooks (Weeks
   Object_Detection/pascal/                         # Same data in Pascal VOC format
   Object_Detection/yolo/                           # Same data in YOLO format
 runs/                                              # Gitignored: saved model checkpoints + plots
-  exp3_fasterrcnn_no_augment/best.pth
-  exp3_fasterrcnn/best.pth
-  exp4_ssd_no_augment/best.pth
-  exp4_ssd/best.pth
+  exp1_resnet18/best.pth                          # ← active Exp 1 checkpoint
+  exp2_resnet18_shallow/best.pth                  # ← active Exp 2 checkpoint
+  exp3_fasterrcnn_v2/best.pth                     # ← active Faster-RCNN checkpoint
+  exp4_ssd_v2/best.pth                            # ← active SSD checkpoint
+  exp3_fasterrcnn/, exp3_fasterrcnn_no_augment/   # older runs (inactive)
+  exp4_ssd/, exp4_ssd_no_augment/                 # older runs (inactive)
 26045171/metadata.json                             # Student-specific dataset configuration
 ```
 
 ## Two distinct frameworks in use
 
-- **Assignment notebooks** (`Experiment_1_Classification.ipynb`, `Part_2_Object_Detection*.ipynb`): PyTorch + torchvision + torchmetrics
+- **Assignment notebooks** (`A2_Classification_P1_Training.ipynb`, `A2_Classification_P1_Evaluation.ipynb`, `A2_Detection_P1_Training.ipynb`): PyTorch + torchvision + torchmetrics + pytorch-grad-cam
 - **Lab notebooks** (`lab/Week*.ipynb`): TensorFlow/Keras (run on AWS SageMaker, not locally)
 
 Do not mix frameworks between these two groups.
 
+## Image classification architecture (Exp 1 & 2)
+
+Both experiments are in `A2_Classification_P1_Training.ipynb`. Models are custom `nn.Module` classes (`BasicBlock`, `ResNet18`, `ResNet18Shallow`) with pretrained ImageNet weights transferred from torchvision via `state_dict()`.
+
+- **Exp 1**: ResNet-18 (baseline) — 17 conv layers, 512-dim features, 11.18M params. Checkpoint: `runs/exp1_resnet18/best.pth`.
+- **Exp 2**: ResNet-18 Shallow (customised) — `layer4` removed, 13 conv layers, 256-dim features, 2.79M params. Checkpoint: `runs/exp2_resnet18_shallow/best.pth`.
+
+Both share: Adam (lr=1e-4, weight_decay=1e-4), CosineAnnealingLR (T_max=150, eta_min=1e-6), early stopping (patience=30) on **val_loss** (not val_acc). Train augmentation: `RandomResizedCrop(224, scale=(0.8,1.0))` + `RandomHorizontalFlip`. Val/test: `Resize(256)` + `CenterCrop(224)`. Split: 70/15/15 stratified (seed=STUDENT_ID) → 1194/256/257 images.
+
+Evaluation is in `A2_Classification_P1_Evaluation.ipynb`: per-class accuracy, confusion matrices, misclassification grids, Grad-CAM analysis (pytorch-grad-cam, target layer: `layer3[-1]` for Exp 2, `layer4[-1]` for Exp 1).
+
 ## Object detection architecture (Exp 3 & 4)
 
-Both experiments are in `Part_2_Object_Detection.ipynb` (no augmentation):
+Both experiments are in `Detection_P1_Training.ipynb`, structured as:
+- **Section 1 (Training):** 1.1 Faster R-CNN, 1.2 SSD300 — each with training loop then history plot
+- **Section 2 (Evaluation):** 2.1 FRCNN eval, 2.2 SSD eval, 2.3 comparison chart, 2.4 class prediction analysis
 
-- **Exp 3**: Faster-RCNN ResNet-50 FPN (pretrained COCO → fine-tuned, batch=2). Head replaced via `FastRCNNPredictor`.
-- **Exp 4**: SSD300 VGG16 (pretrained COCO → fine-tuned, batch=16). Head replaced via `SSDClassificationHead`.
+Models:
+- **Exp 3**: Faster-RCNN ResNet-50 FPN (pretrained COCO → fine-tuned, batch=16). Head replaced via `FastRCNNPredictor`. Checkpoint: `runs/exp3_fasterrcnn_v2/best.pth`.
+- **Exp 4**: SSD300 VGG16 (pretrained COCO → fine-tuned, batch=64). Head replaced via `SSDClassificationHead`. Checkpoint: `runs/exp4_ssd_v2/best.pth`.
 
-Both share the same training loop: SGD (lr=0.005, momentum=0.9), CosineAnnealingLR (T_max=300), early stopping (patience=10–15), gradient clipping (max_norm=5.0). Evaluation uses `torchmetrics.detection.MeanAveragePrecision` (COCO protocol).
+Both share: SGD (lr=1e-3, momentum=0.9, weight_decay=5e-4), no LR scheduler, early stopping (patience=30) on `val_map` (mAP@50-95). History tracks both `val_map50` (mAP@50) and `val_map` (mAP@50-95). Evaluation uses `torchmetrics.detection.MeanAveragePrecision` (COCO protocol).
 
-`LettuceDataset` reads COCO-format JSON annotations and serves `(FloatTensor[3,H,W], target_dict)` pairs. Images with no annotations are filtered out (Faster-RCNN's loss breaks on empty boxes). The `collate_fn` returns a tuple of individual tensors — required because torchvision detection models do not accept stacked batches.
+`LettuceDataset` reads COCO-format JSON annotations and serves `(FloatTensor[3,H,W], target_dict)` pairs. Nine unannotated images (7 train, 2 val) are excluded — visual inspection confirmed these contain plants but lack bounding box labels (annotation omissions, not empty scenes). Including them with empty targets would provide contradictory supervision. The `collate_fn` returns a tuple of individual tensors — required because torchvision detection models do not accept stacked batches.
 
 ## Dataset details
 
 - **Image classification**: 10 dog breeds from Stanford Dogs dataset (affenpinscher, briard, Samoyed, Weimaraner, Lakeland terrier, schipperke, Yorkshire terrier, Appenzeller, otterhound, Leonberg). Dataset NOT pre-split — must split using `STUDENT_ID = 26045171` as random seed.
-- **Object detection**: Lettuce Pallets (5 classes: Ready, empty_pod, germination, pod, young). Class index 0 is reserved for background; COCO category IDs are 1-indexed and match `CLASS_NAMES[1:]` directly. Pre-split: 70/15/15 → 1050/224/226 images.
+- **Object detection**: Lettuce Pallets (5 classes: Ready, empty_pod, germination, pod, young). Class index 0 is reserved for background; COCO category IDs are 1-indexed and match `CLASS_NAMES[1:]` directly. Pre-split: 70/15/15 → 1050/224/226 images (after excluding 9 unannotated images: 7 train, 2 val).
 
 ## Reproducibility
 
@@ -105,3 +118,9 @@ torch.manual_seed(STUDENT_ID)
 random.seed(STUDENT_ID)
 np.random.seed(STUDENT_ID)
 ```
+
+## Known issues / decisions
+
+- **Evaluation notebook `evaluate` function**: still uses fixed `batch_size` in loss accumulation (minor loss reporting inaccuracy only — accuracy metrics via torchmetrics are correct and unaffected).
+- **Early stopping metric**: classification uses `val_loss` (more robust than `val_acc` for this dataset size). Detection uses `val_map` (mAP@50-95). Labs used `val_loss`.
+- **Exp 2 weight_decay**: same as Exp 1 (1e-4) in final run — earlier runs used 1e-3, those checkpoints are inactive.
