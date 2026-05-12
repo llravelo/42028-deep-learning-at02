@@ -87,7 +87,7 @@ Both experiments are in `A2_Classification_P1_Training.ipynb`. Models are custom
 - **Exp 1**: ResNet-18 (baseline) — 17 conv layers, 512-dim features, 11.18M params. Checkpoint: `runs/exp1_resnet18/best.pth`.
 - **Exp 2**: ResNet-18 Shallow (customised) — `layer4` removed, 13 conv layers, 256-dim features, 2.79M params. Checkpoint: `runs/exp2_resnet18_shallow/best.pth`.
 
-Both share: Adam (lr=1e-4, weight_decay=1e-4), CosineAnnealingLR (T_max=150, eta_min=1e-6), early stopping (patience=30) on **val_loss** (not val_acc). Train augmentation: `RandomResizedCrop(224, scale=(0.8,1.0))` + `RandomHorizontalFlip`. Val/test: `Resize(256)` + `CenterCrop(224)`. Split: 70/15/15 stratified (seed=STUDENT_ID) → 1194/256/257 images.
+Both share: Adam (lr=1e-4, weight_decay=1e-4), no LR scheduler (fixed LR), early stopping (patience=30) on **val_loss** (not val_acc). Train augmentation: `RandomResizedCrop(224, scale=(0.8,1.0))` + `RandomHorizontalFlip`. Val/test: `Resize(256)` + `CenterCrop(224)`. Split: 70/15/15 stratified (seed=STUDENT_ID) → 1194/256/257 images.
 
 Evaluation is in `A2_Classification_P1_Evaluation.ipynb`: per-class accuracy, confusion matrices, misclassification grids, Grad-CAM analysis (pytorch-grad-cam, target layer: `layer3[-1]` for Exp 2, `layer4[-1]` for Exp 1).
 
