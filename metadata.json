@@ -1,0 +1,36 @@
+{
+  "generated_at": "2026-03-30T19:29:01.503873Z",
+  "student_info": {
+    "student_id": "26045171",
+    "first_name": "Leiko Armand",
+    "last_name": "Ravelo",
+    "email": "LeikoArmand.Ravelo@student.uts.edu.au"
+  },
+  "image_classification": {
+    "ic_animal_dataset": "Dogs",
+    "ic_num_classes": 10,
+    "ic_selected_classes": [
+      "affenpinscher",
+      "briard",
+      "Samoyed",
+      "Weimaraner",
+      "Lakeland_terrier",
+      "schipperke",
+      "Yorkshire_terrier",
+      "Appenzeller",
+      "otterhound",
+      "Leonberg"
+    ]
+  },
+  "object_detection": {
+    "od_dataset": "Lettuce_Pallets_Detection",
+    "od_formats": [
+      "coco",
+      "pascal",
+      "yolo"
+    ],
+    "od_train_split": 0.7,
+    "od_valid_split": 0.15,
+    "od_test_split": 0.15
+  }
+}
